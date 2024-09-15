@@ -1,0 +1,73 @@
+name: Build and Package
+
+on: [push]
+
+permissions:
+  contents: write
+
+jobs:
+  
+  # Build artifacts
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # We need dotnet
+      - name: Add dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v1
+      
+      - name: Restore NuGet Packages
+        run: nuget restore artwork4DMD.sln
+
+      # Build artifacts when git tag
+      - if: startsWith(github.ref, 'refs/tags/')
+        name: Build
+        run: |
+          dotnet publish -r win-x64 --self-contained=false /p:PublishSingleFile=true artwork4dmd.csproj /p:Version=${{ github.ref_name }}
+
+      - if: "!startsWith(github.ref, 'refs/tags/')"
+        name: Build
+        run: |
+          dotnet publish -r win-x64 --self-contained=false /p:PublishSingleFile=true artwork4dmd.csproj
+
+      # Upload artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artwork4DMD
+          path: .\artwork4DMD\bin\Release\net8.0-windows\win-x64\publish
+          retention-days: 7
+
+      - name: Generate zip bundle
+        run: |
+          # tree /f
+          7z a -tzip artwork4DMD.zip .\artwork4DMD\bin\Release\net8.0-windows\win-x64\publish\*
+      
+      - if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        name: Publish latest pre-release
+        uses: ncipollo/release-action@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          generateReleaseNotes: true
+          prerelease: true
+          artifacts: |
+            artwork4DMD.zip
+
+      - if: startsWith(github.ref, 'refs/tags/')
+        name: Publish tagged release
+        uses: ncipollo/release-action@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          generateReleaseNotes: true
+          prerelease: false
+          allowUpdates: true
+          artifacts: |
+            artwork4DMD.zip
