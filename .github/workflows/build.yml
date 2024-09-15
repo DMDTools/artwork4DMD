@@ -44,13 +44,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: artwork4DMD
-          path: .\artwork4DMD\bin\Release\net8.0-windows\win-x64\publish
+          path: .\bin\Release\net8.0-windows\win-x64\publish
           retention-days: 7
 
       - name: Generate zip bundle
         run: |
-          # tree /f
-          7z a -tzip artwork4DMD.zip .\artwork4DMD\bin\Release\net8.0-windows\win-x64\publish\*
+          7z a -tzip artwork4DMD.zip .\bin\Release\net8.0-windows\win-x64\publish\*
       
       - if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
         name: Publish latest pre-release
