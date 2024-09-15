@@ -37,6 +37,7 @@ jobs:
         name: Build
         run: |
           dotnet publish -r win-x64 --self-contained=false /p:PublishSingleFile=true artwork4dmd.csproj
+          tree
 
       # Upload artifacts
       - name: Upload artifacts
