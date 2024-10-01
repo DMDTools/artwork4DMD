@@ -67,6 +67,7 @@ class Program
         public required bool Overwrite { get; set; }
         public required string Platforms { get; set; }
         public required string OutputFolder { get; set; }
+        public required string OutputSizes { get; set; }
     }
 
     public static Settings gSettings;
@@ -109,8 +110,9 @@ class Program
     /// Download picture for game and save it as <Platform>/<game name>.png
     static async Task DownloadPicture(GameInfo game)
     {
+        Directory.CreateDirectory($"{gSettings.OutputFolder}/orig/{game.Platform}");
         // If overwrite config is false AND file already exist, then don't do anything
-        if ((gSettings.Overwrite == false) && File.Exists($"{gSettings.OutputFolder}\\{game.Platform}\\{game.Name}.png"))
+        if ((gSettings.Overwrite == false) && File.Exists($"{gSettings.OutputFolder}\\orig\\{game.Platform}\\{game.Name}.png"))
         {
             return;
         }
@@ -123,8 +125,8 @@ class Program
         var httpResult = await httpClient.GetAsync($"https://images.launchbox-app.com/{game.LogoFileName}");
         using var resultStream = await httpResult.Content.ReadAsStreamAsync();
         // Create folder if it doesn't exist
-        Directory.CreateDirectory($"{gSettings.OutputFolder}/{game.Platform}");
-        using var fileStream = File.Create($"{gSettings.OutputFolder}/{game.Platform}/{game.Name}.orig.png");
+        Directory.CreateDirectory($"{gSettings.OutputFolder}/orig/{game.Platform}");
+        using var fileStream = File.Create($"{gSettings.OutputFolder}/orig/{game.Platform}/{game.Name}.png");
         resultStream.CopyTo(fileStream);
         fileStream.Close();
     }
@@ -153,17 +155,14 @@ class Program
     {
         // Second pass: Convert all downloaded .orig.png files
         
-        string[] origPngFiles = Directory.GetFiles(gSettings.OutputFolder, "*.*", SearchOption.AllDirectories)
-                                         .Where(f => Path.GetFileName(f).ToLower().EndsWith(".orig.png"))
+        string[] origPngFiles = Directory.GetFiles(gSettings.OutputFolder + "/orig", "*.*", SearchOption.AllDirectories)
+                                         .Where(f => Path.GetFileName(f).ToLower().EndsWith(".png"))
                                          .ToArray();
         Console.WriteLine($"Converting {origPngFiles.Length} pictures...");
 
         foreach (string origPngFile in origPngFiles)
         {
-            string outputFile = Path.Combine(Path.GetDirectoryName(origPngFile), Path.GetFileNameWithoutExtension(origPngFile).Replace(".orig", "") + ".png");
-            ConvertPicture(origPngFile, outputFile);
-            // Delete orig.png file
-            File.Delete(origPngFile);
+            ConvertPicture(origPngFile);
         }
     }
 
@@ -283,39 +282,60 @@ class Program
 
 
     /// <summary>
-    /// Convert an image to a DMD compatible format, 128x32, high contrast, black background, centered
+    /// Convert an image to a DMD compatible format, size driven by settings, high contrast, black background, centered
     /// </summary>
     /// <param name="inputPath"></param>
-    /// <param name="outputPath"></param>
-    static void ConvertPicture(string inputPath, string outputPath)
+    static void ConvertPicture(string inputPath)
     {
-        try
+        var outputSizes = gSettings.OutputSizes.Split(',').Select(s => s.Trim()).ToList();
+
+        foreach (var size in outputSizes)
         {
-            // Original conversion parameters from imagemagick's convert command: "-modulate 100,150,100 -trim -sample 128x32 -extent 128x32 -background black -compose Over -gravity center"
-            using (var image = new ImageMagick.MagickImage(inputPath))
+            var dimensions = size.Split('x');
+            if (dimensions.Length != 2 || !uint.TryParse(dimensions[0], out uint width) || !uint.TryParse(dimensions[1], out uint height))
             {
-                Console.WriteLine($"Converting {Path.GetFileName(inputPath)} to {Path.GetFileName(outputPath)}");
-                // Create output folder if it doesn't exist
-                Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
-                image.Strip();  // Remove metadata
-                image.Format = MagickFormat.Png32;
-                image.Modulate(new Percentage(100), new Percentage(150), new Percentage(100)); // Adjust brightness, saturation, and hue
-                //image.Trim(); // Trim the image to its bounding box
-                image.BackgroundColor = new MagickColor(0, 0, 0, 255); // Set the background color to black
-                //image.Alpha(AlphaOption.Opaque);
-                image.Compose = CompositeOperator.Over; // Over composite the image
-                image.Sample(128, 32); // Resize the image to 128x32
-                image.Extent(128, 32, Gravity.Center); // Ensure the image is centered and has the correct dimensions
-                image.Write(outputPath); // Save the image
+                Console.WriteLine($"Invalid size format in settings.ini: {size}. Skipping.");
+                continue;
             }
-        }
-        catch (MagickException ex)
-        {
-            Console.WriteLine($"Error converting {Path.GetFileName(inputPath)}: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Unexpected error converting {Path.GetFileName(inputPath)}: {ex.Message}");
+
+            // inputPath is in the form "{gSettings.OutputFolder}/orig/{platform}/{gameName}.png"
+            // outputPath is in the form "{gSettings.OutputFolder}/{gSettings.OutputSize}/{platform}/{gameName}.png
+            string outputPath = Path.Combine(
+                gSettings.OutputFolder,
+                $"{width}x{height}",
+                Path.GetDirectoryName(inputPath).Split('\\').Last(),
+                $"{Path.GetFileNameWithoutExtension(inputPath)}.png"
+            );
+            //Console.WriteLine($"Converting {Path.GetFileName(inputPath)} to {Path.GetFileName(outputPath)}");
+            Console.WriteLine($"Creating {outputPath}");
+
+            try
+            {
+                // Original conversion parameters from imagemagick's convert command: "-modulate 100,150,100 -trim -sample 128x32 -extent 128x32 -background black -compose Over -gravity center"
+                using (var image = new ImageMagick.MagickImage(inputPath))
+                {
+                    // Create output folder if it doesn't exist
+                    Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+                    image.Strip();  // Remove metadata
+                    image.Format = MagickFormat.Png32;
+                    image.Modulate(new Percentage(100), new Percentage(150), new Percentage(100)); // Adjust brightness, saturation, and hue
+                                                                                                   //image.Trim(); // Trim the image to its bounding box
+                    image.BackgroundColor = new MagickColor(0, 0, 0, 255); // Set the background color to black
+                                                                           //image.Alpha(AlphaOption.Opaque);
+                    image.Compose = CompositeOperator.Over; // Over composite the image
+                    image.Sample(width, height); // Resize the image to size provided by settings
+                    image.Extent(width, height, Gravity.Center); // Ensure the image is centered and has the correct dimensions
+                    image.Write(outputPath); // Save the image
+                }
+            }
+            catch (MagickException ex)
+            {
+                Console.WriteLine($"Error converting {Path.GetFileName(inputPath)}: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error converting {Path.GetFileName(inputPath)}: {ex.Message}");
+            }
         }
     }
 }

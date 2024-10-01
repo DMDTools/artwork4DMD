@@ -34,6 +34,7 @@ The application uses a `settings.ini` file for configuration. You can specify:
 - Platforms to include
 - Image processing parameters
 - Output directories
+- Output sizes (for 128x32 DMD and 256x64 DMD for example)
 
 ```ini
 [Settings]
@@ -41,6 +42,7 @@ Platforms=Arcade
 ;Platforms=Arcade,Amstrad CPC,Commodore Amiga,Commodore 64,Atari ST
 OutputFolder=.
 Overwrite=false
+OutputSizes=128x32,256x64
 ```
 
 ## Usage
