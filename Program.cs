@@ -85,8 +85,6 @@ class Program
         LoadAndParse();
         Task downloadTask = Task.Run(() => DownloadPictures());
         downloadTask.Wait();
-        // Wait for 5 seconds - for write cache to flush
-        await Task.Delay(30000);
         Task convertTask = Task.Run(() => ConvertDownloadedPictures());
         convertTask.Wait();
     }
@@ -94,14 +92,22 @@ class Program
     /// Download http://gamesdb.launchbox-app.com/Metadata.zip and extract it
     static async Task DownloadMetadataAndExtract()
     {
-        // Download the zip file
-        Console.WriteLine("Downloading Metadata.zip...");
-        var httpClient = new HttpClient();
-        var httpResult = await httpClient.GetAsync("http://gamesdb.launchbox-app.com/Metadata.zip");
-        using var resultStream = await httpResult.Content.ReadAsStreamAsync();
-        using var fileStream = File.Create("Metadata.zip");
-        resultStream.CopyTo(fileStream);
-        fileStream.Close();
+        string metadataZipPath = "Metadata.zip";
+        if (!File.Exists(metadataZipPath))
+        {
+            // Download the zip file
+            Console.WriteLine("Downloading Metadata.zip...");
+            var httpClient = new HttpClient();
+            var httpResult = await httpClient.GetAsync("http://gamesdb.launchbox-app.com/Metadata.zip");
+            using var resultStream = await httpResult.Content.ReadAsStreamAsync();
+            using var fileStream = File.Create("Metadata.zip");
+            resultStream.CopyTo(fileStream);
+            fileStream.Close();
+        }
+        else
+        {
+            Console.WriteLine("Metadata.zip already exists. Skipping download.");
+        }
         // Extract the zip file
         Console.WriteLine("Extracting Metadata.zip...");
         System.IO.Compression.ZipFile.ExtractToDirectory("Metadata.zip", ".", true);
@@ -114,10 +120,11 @@ class Program
         // If overwrite config is false AND file already exist, then don't do anything
         if ((gSettings.Overwrite == false) && File.Exists($"{gSettings.OutputFolder}\\orig\\{game.Platform}\\{game.Name}.png"))
         {
+            Console.WriteLine($"Skipping download of {gSettings.OutputFolder}\\orig\\{game.Platform}\\{game.Name}.png because it already exists");
             return;
         }
         if (game.Name.Contains(":")) {
-            Console.WriteLine($"Skipping {game.Platform}/{game.Name} because it contains a colon - invalid character for a filename");
+            Console.WriteLine($"Skipping download of {game.Platform}/{game.Name} because it contains a colon - invalid character for a filename");
             return;
         }
         Console.WriteLine($"Downloading picture for {game.Platform}/{game.Name}: https://images.launchbox-app.com/{game.LogoFileName}");
@@ -137,6 +144,9 @@ class Program
     /// <returns></returns>
     static async Task DownloadPictures()
     {
+        // Sort the Games list alphabetically by Name
+        var sortedGames = Games.OrderBy(g => g.Name).ToList();
+        
         foreach (var game in Games)
         {
             if (game.LogoFileName != null)
