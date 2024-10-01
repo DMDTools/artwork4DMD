@@ -8,6 +8,20 @@ DMD.
 
 ![Output](output.png)
 
+And this are the results:
+
+- Original (3973x1268 pixels)
+
+  ![](original.png)
+
+- 128x32
+
+  ![](128x32.png)
+
+- 256x64
+
+  ![](256x64.png)
+
 ## Description
 
 This application processes game information from Launchbox's `Metadata.xml`
