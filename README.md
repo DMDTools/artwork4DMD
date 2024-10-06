@@ -1,6 +1,9 @@
 # Artwork4DMD
 
-Artwork4DMD is a C# application that creates artwork for DMD (Dot Matrix Display) by fetching artwork from the [Launchbox Game Database](https://www.launchbox-app.com/).
+Artwork4DMD is a C# application to create artwork for DMD (Dot Matrix Display) by 
+
+- Fetching artwork from the [Launchbox Game Database](https://www.launchbox-app.com/)
+- Converting local GIFs to a format suitable for a DMD
 
 This artwork can be used for example by
 [DOF2DMD](https://github.com/DMDTools/DOF2DMD) to display game marquees on a
@@ -47,8 +50,8 @@ DMD.
 
 ## Description
 
-This application processes game information from Launchbox's `Metadata.xml`
-file, downloads game logos, and converts them into a format suitable for use
+This application can process game information from Launchbox's `Metadata.xml`
+file, downloads game "clear logos", and converts them into a format suitable for use
 with DMD displays. It also supports converting local GIF files to DMD-compatible
 formats. It's particularly useful for arcade and retro gaming
 enthusiasts who want to enhance their gaming setup with custom artwork.
