@@ -39,6 +39,7 @@ using System.Linq;
 using System.Configuration;
 using System.Net;
 using System.Threading;
+using System.Collections.ObjectModel;
 
 class Program
 {
@@ -68,6 +69,11 @@ class Program
         public required string Platforms { get; set; }
         public required string OutputFolder { get; set; }
         public required string OutputSizes { get; set; }
+        public string LocalGifFolder { get; set; } = string.Empty;
+        public bool ConvertLocalGif { get; set; } = false;
+        public bool ConvertOnlineLaunchboxGamesDB { get; set; } = true;
+        public uint GifColors { get; set; } = 32;
+        public string GifScaleMode { get; set; } = "fill";
     }
 
     public static Settings gSettings;
@@ -81,12 +87,12 @@ class Program
         // Set up logging to a file
         Trace.Listeners.Add(new TextWriterTraceListener("debug.log") { TraceOutputOptions = TraceOptions.Timestamp });
         Trace.AutoFlush = true;
-        DownloadMetadataAndExtract().Wait();
-        LoadAndParse();
-        Task downloadTask = Task.Run(() => DownloadPictures());
-        downloadTask.Wait();
-        Task convertTask = Task.Run(() => ConvertDownloadedPictures());
-        convertTask.Wait();
+        if (gSettings.ConvertOnlineLaunchboxGamesDB) {
+            await DownloadMetadataAndExtract();
+            LoadAndParse();
+            await DownloadPictures();
+        }
+        ConvertPictures();
     }
 
     /// Download http://gamesdb.launchbox-app.com/Metadata.zip and extract it
@@ -161,18 +167,34 @@ class Program
     /// </summary>
     /// <param name="inputFile"></param>
     /// <param name="outputFile"></param>
-    static void ConvertDownloadedPictures()
+    static void ConvertPictures()
     {
         // Second pass: Convert all downloaded .orig.png files
-        
-        string[] origPngFiles = Directory.GetFiles(gSettings.OutputFolder + "/orig", "*.*", SearchOption.AllDirectories)
-                                         .Where(f => Path.GetFileName(f).ToLower().EndsWith(".png"))
-                                         .ToArray();
-        Console.WriteLine($"Converting {origPngFiles.Length} pictures...");
 
-        foreach (string origPngFile in origPngFiles)
+        if (gSettings.ConvertOnlineLaunchboxGamesDB)
         {
-            ConvertPicture(origPngFile);
+            string[] origPngFiles = Directory.GetFiles(gSettings.OutputFolder + "/orig", "*.*", SearchOption.AllDirectories)
+                                             .Where(f => Path.GetFileName(f).ToLower().EndsWith(".png"))
+                                             .ToArray();
+            Console.WriteLine($"Converting {origPngFiles.Length} pictures...");
+
+            foreach (string origPngFile in origPngFiles)
+            {
+                ConvertPicture(origPngFile, false);
+            }
+        }
+
+        // If convertLocalGif is true, scan the GIFs from the folder provided
+        if (gSettings.ConvertLocalGif)
+        {
+            string[] gifFiles = Directory.GetFiles(gSettings.LocalGifFolder, "*.*", SearchOption.AllDirectories)
+                                         .Where(f => Path.GetFileName(f).ToLower().EndsWith(".gif"))
+                                         .ToArray();
+            Console.WriteLine($"Converting {gifFiles.Length} GIFs...");
+            foreach (string gifFile in gifFiles)
+            {
+                ConvertPicture(gifFile, true);
+            }
         }
     }
 
@@ -295,7 +317,7 @@ class Program
     /// Convert an image to a DMD compatible format, size driven by settings, high contrast, black background, centered
     /// </summary>
     /// <param name="inputPath"></param>
-    static void ConvertPicture(string inputPath)
+    static void ConvertPicture(string inputPath, bool isGif)
     {
         var outputSizes = gSettings.OutputSizes.Split(',').Select(s => s.Trim()).ToList();
 
@@ -310,11 +332,14 @@ class Program
 
             // inputPath is in the form "{gSettings.OutputFolder}/orig/{platform}/{gameName}.png"
             // outputPath is in the form "{gSettings.OutputFolder}/{gSettings.OutputSize}/{platform}/{gameName}.png
+            string inputExtension = Path.GetExtension(inputPath).ToLowerInvariant();
+            string outputExtension = (inputExtension == ".gif" || inputExtension == ".png") ? inputExtension : ".png";
+
             string outputPath = Path.Combine(
                 gSettings.OutputFolder,
                 $"{width}x{height}",
                 Path.GetDirectoryName(inputPath).Split('\\').Last(),
-                $"{Path.GetFileNameWithoutExtension(inputPath)}.png"
+                $"{Path.GetFileNameWithoutExtension(inputPath)}{outputExtension}"
             );
             //Console.WriteLine($"Converting {Path.GetFileName(inputPath)} to {Path.GetFileName(outputPath)}");
             Console.WriteLine($"Creating {outputPath}");
@@ -327,15 +352,59 @@ class Program
                     // Create output folder if it doesn't exist
                     Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
                     image.Strip();  // Remove metadata
-                    image.Format = MagickFormat.Png32;
-                    image.Modulate(new Percentage(100), new Percentage(150), new Percentage(100)); // Adjust brightness, saturation, and hue
-                                                                                                   //image.Trim(); // Trim the image to its bounding box
-                    image.BackgroundColor = new MagickColor(0, 0, 0, 255); // Set the background color to black
-                                                                           //image.Alpha(AlphaOption.Opaque);
-                    image.Compose = CompositeOperator.Over; // Over composite the image
-                    image.Sample(width, height); // Resize the image to size provided by settings
-                    image.Extent(width, height, Gravity.Center); // Ensure the image is centered and has the correct dimensions
-                    image.Write(outputPath); // Save the image
+                    if (!isGif)
+                    {
+                        image.Format = MagickFormat.Png32;
+                        image.Modulate(new Percentage(100), new Percentage(150), new Percentage(100)); // Adjust brightness, saturation, and hue
+                                                                                                       //image.Trim(); // Trim the image to its bounding box
+                        image.BackgroundColor = new MagickColor(0, 0, 0, 255); // Set the background color to black
+                                                                               //image.Alpha(AlphaOption.Opaque);
+                        image.Compose = CompositeOperator.Over; // Over composite the image
+                        image.Sample(width, height); // Resize the image to size provided by settings
+                        image.Extent(width, height, Gravity.Center); // Ensure the image is centered and has the correct dimensions
+                        image.Write(outputPath); // Save the image
+                    }
+                    else {
+                        // Original ImageMagic command: "convert input.gif -coalesce -scale widthxheight -fuzz 2% +dither -remap ( input.gif[0] +dither -colors XX ) -layers Optimize output.gif"
+                        using var gifFrames = new MagickImageCollection(inputPath);
+                        gifFrames.Coalesce();
+                        // Find average color to setup background, from first image
+                        var colorImage = new ImageMagick.MagickImage(gifFrames.First());
+                        colorImage.Resize(1, 1);
+                        var averageColor = colorImage.GetPixels().First().ToColor();
+                        foreach (var frame in gifFrames)
+                        {
+                            frame.BackgroundColor = new MagickColor(averageColor);
+                            frame.Compose = CompositeOperator.Over;
+                            if (gSettings.GifScaleMode.ToLower() == "fit")
+                            {
+                                // Fit mode: Resize to fit within the target dimensions while maintaining aspect ratio
+                                var frameSize = new MagickGeometry($"{width}x{height}");
+                                frameSize.IgnoreAspectRatio = false;
+                                frame.Resize(frameSize);
+                                frame.Extent(width, height, Gravity.Center);
+                            }
+                            else if (gSettings.GifScaleMode.ToLower() == "fill")
+                            {
+                                // Fill mode: Resize to fill the entire target dimensions and crop if necessary
+                                var frameSize = new MagickGeometry($"{width}x{height}^");
+                                frameSize.IgnoreAspectRatio = false;
+                                frame.Resize(frameSize);
+                                frame.Extent(width, height, Gravity.Center);
+                            }
+                            frame.ColorFuzz = new Percentage(2);
+                            frame.Modulate(new Percentage(100), new Percentage(150), new Percentage(100));
+                        }
+                        // Optimize
+                        var settings = new QuantizeSettings
+                        {
+                            Colors = gSettings.GifColors,
+                            DitherMethod = DitherMethod.FloydSteinberg
+                        };
+                        gifFrames.Quantize(settings);
+                        gifFrames.Optimize();
+                        gifFrames.Write(outputPath);    // Save the GIF
+                    }
                 }
             }
             catch (MagickException ex)

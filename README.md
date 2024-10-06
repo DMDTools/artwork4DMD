@@ -8,7 +8,7 @@ DMD.
 
 ![Output](output.png)
 
-And this are the results:
+## Converting LaunchBox Game Database Clear Logos
 
 - Original (3973x1268 pixels)
 
@@ -22,41 +22,78 @@ And this are the results:
 
   ![](256x64.png)
 
+## Converting local GIF images to fit or fill DMD
+
+- Original
+
+  ![](original.gif)
+
+- 128x32 Fit
+
+  ![](128x32-fit.gif)
+
+- 128x32 Fill
+
+  ![](128x32-fill.gif)
+
+- 256x64 Fit
+
+  ![](256x64-fit.gif)
+
+- 256x64 Fill
+
+  ![](256x64-fill.gif)
+
+
 ## Description
 
 This application processes game information from Launchbox's `Metadata.xml`
 file, downloads game logos, and converts them into a format suitable for use
-with DMD displays. It's particularly useful for arcade and retro gaming
+with DMD displays. It also supports converting local GIF files to DMD-compatible
+formats. It's particularly useful for arcade and retro gaming
 enthusiasts who want to enhance their gaming setup with custom artwork.
 
 ## Features
 
+For Launchbox game database:
 - Parses Metadata.xml file from Launchbox Game Database
 - Downloads game logos for specified platforms
-- Converts images to a suitable format for DMD displays (128x32, high contrast, black background, centered)
+- Converts images to a suitable format for DMD displays (128x32 or 256x64 or anything else, high contrast, black background, centered)
 - Supports all gaming platforms from Launchbox (configurable)
+
+For local GIF folder:
+- Converts local GIF files to a suitable format for DMD displays (128x32 or 256x64 or anything else, high contrast, black background, centered)
 
 ## Prerequisites
 
-- .NET Core 3.1 or later
+- .NET 8 for Windows or later
 - ImageMagick (for image processing)
 
 ## Configuration
 
 The application uses a `settings.ini` file for configuration. You can specify:
 
-- Platforms to include
-- Image processing parameters
-- Output directories
+- Platforms to include (`Platforms`)
+- Output directory (`OutputFolder`)
 - Output sizes (for 128x32 DMD and 256x64 DMD for example)
+- Whether to download and convert from LaunchBox game DB (`ConvertOnlineLaunchboxGamesDB`)
+- Whether to convert local GIF files (`ConvertLocalGifFiles`)
+- The number of colors for GIF files
+- Whether to fit the image inside the dimensions of the DMD or fill the DMD and crop
 
 ```ini
 [Settings]
+ConvertOnlineLaunchboxGamesDB=true
 Platforms=Arcade
 ;Platforms=Arcade,Amstrad CPC,Commodore Amiga,Commodore 64,Atari ST
 OutputFolder=.
 Overwrite=false
 OutputSizes=128x32,256x64
+ConvertLocalGifFiles=false
+LocalGifFolder=C:\path\to\your\gif\folder
+GifColors=128
+; GifScaleMode=fill or fit
+GifScaleMode=fill
 ```
 
 ## Usage
