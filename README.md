@@ -61,9 +61,10 @@ OutputSizes=128x32,256x64
 
 ## Usage
 
-1. Download the binary from the [Release section](https://github.com/DMDTools/Artwork4DMD/releases)
-2. Configure your `settings.ini` file with desired parameters.
-3. Run the application
+1. Install .NET 8 "Runtime desktop" from Microsoft : https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.6-windows-x64-installer
+2. Download the binary from the [Release section](https://github.com/DMDTools/Artwork4DMD/releases)
+3. Configure your `settings.ini` file with desired parameters.
+4. Run the application
 
 ## Building
 
