@@ -85,5 +85,5 @@ jobs:
           generateReleaseNotes: true
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
           allowUpdates: true
-          artifacts: "artwork4dmd-windows.zip,artwork4dmd-linux.zip"
+          artifacts: "artwork4dmd-windows,artwork4dmd-linux"
           tag: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v{0}', github.sha) }}
