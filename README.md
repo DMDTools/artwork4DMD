@@ -1,6 +1,6 @@
 # Artwork4DMD
 
-Artwork4DMD is a C# application to create artwork for DMD (Dot Matrix Display) by 
+Artwork4DMD is a C# application for both Windows and Linux to create artwork for DMD (Dot Matrix Display) by
 
 - Fetching artwork from the [Launchbox Game Database](https://www.launchbox-app.com/)
 - Converting local GIFs to a format suitable for a DMD
@@ -47,7 +47,6 @@ DMD.
 
   ![](256x64-fill.gif)
 
-
 ## Description
 
 This application can process game information from Launchbox's `Metadata.xml`
@@ -59,18 +58,34 @@ enthusiasts who want to enhance their gaming setup with custom artwork.
 ## Features
 
 For Launchbox game database:
+
 - Parses Metadata.xml file from Launchbox Game Database
 - Downloads game logos for specified platforms
 - Converts images to a suitable format for DMD displays (128x32 or 256x64 or anything else, high contrast, black background, centered)
 - Supports all gaming platforms from Launchbox (configurable)
 
 For local GIF folder:
+
 - Converts local GIF files to a suitable format for DMD displays (128x32 or 256x64 or anything else, high contrast, black background, centered)
 
-## Prerequisites
+## Installation
 
-- .NET 8 for Windows or later
-- ImageMagick (for image processing)
+- Windows
+  1. Install .NET 8 "Runtime desktop" from Microsoft: [Download .NET 8 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.6-windows-x64-installer)
+  1. Download the Windows binary (`artwork4dmd-windows.zip`) from the [Release section](https://github.com/DMDTools/Artwork4DMD/releases)
+  1. Extract the ZIP file to your desired location
+
+- Linux
+  1. Install .NET 8 for Linux:
+
+     ```shell
+     wget https://dot.net/v1/dotnet-install.sh
+     chmod +x ./dotnet-install.sh
+     ./dotnet-install.sh --channel 8.
+     ```
+
+  1. Download the Linux binary (`artwork4dmd-linux.zip`) from the [Release section](https://github.com/DMDTools/Artwork4DMD/releases)
+  1. Extract the ZIP file: `unzip artwork4dmd-linux.zip -d artwork4dmd`
 
 ## Configuration
 
@@ -101,20 +116,30 @@ GifScaleMode=fill
 
 ## Usage
 
-1. Install .NET 8 "Runtime desktop" from Microsoft : https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.6-windows-x64-installer
-2. Download the binary from the [Release section](https://github.com/DMDTools/Artwork4DMD/releases)
-3. Configure your `settings.ini` file with desired parameters.
-4. Run the application
+- Windows
+  - Configure your settings.ini file with desired parameters.
+  - Double-click the artwork4dmd.exe file or run it from the command line: `.\artwork4dmd.exe`
+
+- Linux
+  - Configure your settings.ini file with desired parameters.
+  - Make the application executable: `chmod +x artwork4dmd`
+  - Run the application: `./artwork4dmd`
 
 ## Building
 
 To build the application as a single file:
 
-```shell
-dotnet publish -r win-x64 -c Release /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
-```
+- Windows
 
-Replace `win-x64` with your target runtime identifier if different.
+  ```shell
+  dotnet publish -r win-x64 -c Release /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+  ```
+
+- Linux
+
+  ```shell
+  dotnet publish -r linux-x64 -c Release /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+  ```
 
 ## License
 
