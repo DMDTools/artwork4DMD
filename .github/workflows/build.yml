@@ -28,15 +28,11 @@ jobs:
             dotnet publish -r win-x64 -c Release
           }
 
-      - name: Create zip artifact
-        run: |
-          Compress-Archive -Path .\bin\Release\net8.0\win-x64\publish\* -DestinationPath artwork4dmd-windows.zip -Force
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: artwork4dmd-windows
-          path: artwork4dmd-windows.zip
+          name: artwork4dmd-windows.zip
+          path: .\bin\Release\net8.0\win-x64\publish\
           retention-days: 7
 
   build-linux:
@@ -61,14 +57,11 @@ jobs:
             dotnet publish -r linux-x64 -c Release
           fi
 
-      - name: Create zip artifact
-        run: zip -j artwork4dmd-linux.zip ./bin/Release/net8.0/linux-x64/publish/*
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: artwork4dmd-linux
-          path: artwork4dmd-linux.zip
+          name: artwork4dmd-linux.zip
+          path: ./bin/Release/net8.0/linux-x64/publish/
 
   create-release:
     needs: [build-windows, build-linux]
