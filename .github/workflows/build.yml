@@ -12,28 +12,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Add dotnet
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.x
 
-      - name: Setup NuGet
-        uses: NuGet/setup-nuget@v1
-      
-      - name: Restore NuGet Packages
-        run: nuget restore artwork4DMD.sln
+      - name: Restore dependencies
+        run: dotnet restore
 
       - name: Build
         run: |
           if ('${{ startsWith(github.ref, 'refs/tags/') }}' -eq 'true') {
-            dotnet publish -r win-x64 --self-contained=false /p:PublishSingleFile=true artwork4dmd.csproj /p:Version=${{ github.ref_name }}
+            dotnet publish -r win-x64 -c Release /p:Version=${{ github.ref_name }}
           } else {
-            dotnet publish -r win-x64 --self-contained=false /p:PublishSingleFile=true artwork4dmd.csproj
+            dotnet publish -r win-x64 -c Release
           }
 
       - name: Generate zip bundle
         run: |
-          7z a -tzip artwork4DMD-windows.zip .\bin\Release\net8.0-windows\win-x64\publish\*
+          Compress-Archive -Path .\bin\Release\net8.0\win-x64\publish\* -DestinationPath artwork4DMD-windows.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -59,13 +56,14 @@ jobs:
       - name: Build
         run: |
           if [[ ${{ github.ref }} == refs/tags/* ]]; then
-            dotnet publish -r linux-x64 -c Release /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:Version=${{ github.ref_name }}
+            dotnet publish -r linux-x64 -c Release /p:Version=${{ github.ref_name }}
           else
-            dotnet publish -r linux-x64 -c Release /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+            dotnet publish -r linux-x64 -c Release
           fi
 
       - name: Zip artifact
-        run: zip -r artwork4DMD-linux.zip ./bin/Release/net8.0/linux-x64/publish/
+        run: |
+          zip -r artwork4DMD-linux.zip ./bin/Release/net8.0/linux-x64/publish/*
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
