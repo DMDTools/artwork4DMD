@@ -78,6 +78,8 @@ jobs:
         with:
           name: artwork4dmd-linux
 
+      - name: ls
+        run: ls -alrt
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
@@ -85,5 +87,5 @@ jobs:
           generateReleaseNotes: true
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
           allowUpdates: true
-          artifacts: "artwork4dmd-windows,artwork4dmd-linux"
+          artifacts: "artwork4dmd*"
           tag: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v{0}', github.sha) }}
