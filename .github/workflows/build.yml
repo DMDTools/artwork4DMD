@@ -31,7 +31,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: artwork4dmd-windows.zip
+          name: artwork4dmd-windows
           path: .\bin\Release\net8.0\win-x64\publish\
           retention-days: 7
 
@@ -60,7 +60,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: artwork4dmd-linux.zip
+          name: artwork4dmd-linux
           path: ./bin/Release/net8.0/linux-x64/publish/
 
   create-release:
