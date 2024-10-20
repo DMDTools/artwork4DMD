@@ -40,6 +40,7 @@ using System.Configuration;
 using System.Net;
 using System.Threading;
 using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 
 class Program
 {
@@ -79,6 +80,12 @@ class Program
     public static Settings gSettings;
     static async Task Main(string[] args)
     {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            // Set the MAGICK_HOME environment variable to the directory containing ImageMagick libraries
+            Environment.SetEnvironmentVariable("MAGICK_HOME", AppDomain.CurrentDomain.BaseDirectory);
+        }
+
         string iniPath = Path.Combine(Environment.CurrentDirectory, "settings.ini");
         IConfigurationRoot config = new ConfigurationBuilder()
             .AddIniFile(iniPath)
@@ -124,9 +131,10 @@ class Program
     {
         Directory.CreateDirectory($"{gSettings.OutputFolder}/orig/{game.Platform}");
         // If overwrite config is false AND file already exist, then don't do anything
-        if ((gSettings.Overwrite == false) && File.Exists($"{gSettings.OutputFolder}\\orig\\{game.Platform}\\{game.Name}.png"))
+        string filePath = Path.Combine(gSettings.OutputFolder, "orig", game.Platform, $"{game.Name}.png");
+        if ((gSettings.Overwrite == false) && File.Exists(filePath))
         {
-            Console.WriteLine($"Skipping download of {gSettings.OutputFolder}\\orig\\{game.Platform}\\{game.Name}.png because it already exists");
+            Console.WriteLine($"Skipping download of {filePath} because it already exists");
             return;
         }
         if (game.Name.Contains(":")) {
@@ -338,7 +346,7 @@ class Program
             string outputPath = Path.Combine(
                 gSettings.OutputFolder,
                 $"{width}x{height}",
-                Path.GetDirectoryName(inputPath).Split('\\').Last(),
+                Path.GetFileName(Path.GetDirectoryName(inputPath)),
                 $"{Path.GetFileNameWithoutExtension(inputPath)}{outputExtension}"
             );
             //Console.WriteLine($"Converting {Path.GetFileName(inputPath)} to {Path.GetFileName(outputPath)}");
