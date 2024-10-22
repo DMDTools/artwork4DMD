@@ -75,6 +75,7 @@ class Program
         public bool ConvertOnlineLaunchboxGamesDB { get; set; } = true;
         public uint GifColors { get; set; } = 32;
         public string GifScaleMode { get; set; } = "fill";
+        public string BackgroundColor { get; set; } = "#000000";
     }
 
     public static Settings gSettings;
@@ -378,7 +379,7 @@ class Program
                         image.Format = MagickFormat.Png32;
                         image.Modulate(new Percentage(100), new Percentage(150), new Percentage(100)); // Adjust brightness, saturation, and hue
                                                                                                        //image.Trim(); // Trim the image to its bounding box
-                        image.BackgroundColor = new MagickColor(0, 0, 0, 255); // Set the background color to black
+                        image.BackgroundColor = new MagickColor(gSettings.BackgroundColor); // Set the background color to what the user likes (default is black)
                                                                                //image.Alpha(AlphaOption.Opaque);
                         image.Compose = CompositeOperator.Over; // Over composite the image
                         image.Sample(width, height); // Resize the image to size provided by settings

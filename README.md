@@ -96,8 +96,9 @@ The application uses a `settings.ini` file for configuration. You can specify:
 - Output sizes (for 128x32 DMD and 256x64 DMD for example)
 - Whether to download and convert from LaunchBox game DB (`ConvertOnlineLaunchboxGamesDB`)
 - Whether to convert local GIF files (`ConvertLocalGifFiles`)
-- The number of colors for GIF files
-- Whether to fit the image inside the dimensions of the DMD or fill the DMD and crop
+- The number of colors for GIF files (`GifColors`)
+- Whether to fit the image inside the dimensions of the DMD or fill the DMD and crop (`GifScaleMode=fill|fit`)
+- The background color for marquees (`BackgroundColor=#000000`, defaults to black)
 
 ```ini
 [Settings]
@@ -112,6 +113,7 @@ LocalGifFolder=C:\path\to\your\gif\folder
 GifColors=128
 ; GifScaleMode=fill or fit
 GifScaleMode=fill
+BackgroundColor=#000000
 ```
 
 ## Usage
