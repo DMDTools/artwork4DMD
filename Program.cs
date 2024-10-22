@@ -81,6 +81,13 @@ class Program
     public static Settings gSettings;
     static async Task Main(string[] args)
     {
+
+        if (args.Length > 0 && args[0] == "--list-platforms")
+        {
+            await ListPlatforms();
+            return;
+        }
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             // Set the MAGICK_HOME environment variable to the directory containing ImageMagick libraries
@@ -101,6 +108,48 @@ class Program
             await DownloadPictures();
         }
         ConvertPictures();
+    }
+
+    static async Task ListPlatforms()
+    {
+        string platformsFile = "Platforms.xml";
+
+        if (!File.Exists(platformsFile))
+        {
+            Console.WriteLine("Platforms.xml not found. Downloading metadata...");
+            await DownloadMetadataAndExtract();
+            
+            if (!File.Exists(platformsFile))
+            {
+                Console.WriteLine("Error: Failed to download or extract Platforms.xml.");
+                return;
+            }
+        }
+
+        HashSet<string> platforms = new HashSet<string>();
+
+        using (XmlReader reader = XmlReader.Create("Platforms.xml"))
+        {
+            while (reader.Read())
+            {
+                if (reader.NodeType == XmlNodeType.Element)
+                {
+                    switch (reader.Name)
+                    {
+                        case "Name":
+                            string platform = reader.ReadElementContentAsString();
+                            platforms.Add(platform);
+                            break;
+                    }
+                }
+            }
+        }
+
+        Console.WriteLine("Available platforms:");
+        foreach (string platform in platforms.OrderBy(p => p))
+        {
+            Console.WriteLine($"- {platform}");
+        }
     }
 
     /// Download http://gamesdb.launchbox-app.com/Metadata.zip and extract it
