@@ -349,6 +349,19 @@ class Program
                 Path.GetFileName(Path.GetDirectoryName(inputPath)),
                 $"{Path.GetFileNameWithoutExtension(inputPath)}{outputExtension}"
             );
+
+            // Check if the output file exists and is newer than the input file
+            if (File.Exists(outputPath))
+            {
+                DateTime inputFileDate = File.GetLastWriteTime(inputPath);
+                DateTime outputFileDate = File.GetLastWriteTime(outputPath);
+                if (outputFileDate >= inputFileDate)
+                {
+                    Console.WriteLine($"Skipping {outputPath} - it is newer than or same age as source file.");
+                    continue;
+                } 
+            }
+            
             //Console.WriteLine($"Converting {Path.GetFileName(inputPath)} to {Path.GetFileName(outputPath)}");
             Console.WriteLine($"Creating {outputPath}");
 
