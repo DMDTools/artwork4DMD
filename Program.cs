@@ -99,6 +99,11 @@ class Program
             .AddIniFile(iniPath)
             .Build();
         gSettings = config.GetRequiredSection("Settings").Get<Settings>();
+        // If orig folder does not exist, create it
+        if (!Directory.Exists($"{gSettings.OutputFolder}/orig"))
+        {
+            Directory.CreateDirectory($"{gSettings.OutputFolder}/orig");
+        }
         // Set up logging to a file
         Trace.Listeners.Add(new TextWriterTraceListener("debug.log") { TraceOutputOptions = TraceOptions.Timestamp });
         Trace.AutoFlush = true;
@@ -150,6 +155,8 @@ class Program
         {
             Console.WriteLine($"- {platform}");
         }
+        Console.WriteLine("Or add this line to settings.ini:");
+        Console.WriteLine($"Platforms={string.Join(",", platforms.OrderBy(p => p))}");
     }
 
     /// Download http://gamesdb.launchbox-app.com/Metadata.zip and extract it
@@ -271,10 +278,16 @@ class Program
         }
         else
         {
-            platforms = new List<string> { "Arcade" };
+            Console.WriteLine("No platforms specified. Using 'Arcade' as default. Use 'artwork4dmd --list-platforms' to dump all available platforms.");
+            platforms = new List<string> { "arcade" };
         }
 
-        using (XmlReader reader = XmlReader.Create("Metadata.xml"))
+        var mySettings = new XmlReaderSettings
+        {
+            CheckCharacters = false
+        };
+
+        using (XmlReader reader = XmlReader.Create("Metadata.xml", mySettings))
         {
             while (reader.Read())
             {
@@ -315,7 +328,7 @@ class Program
                                 // Add the game if the platform is part of the list of platforms to scrap
 
                                 // If platforms list matches game.Platform
-                                if (platforms.Any(x => x.Contains(game.Platform.ToLower().Trim())))
+                                if (platforms.Any(x => game.Platform.ToLower().Trim().Contains(x)))
                                 {
                                     Games.Add(game);
                                     // Add game to list
